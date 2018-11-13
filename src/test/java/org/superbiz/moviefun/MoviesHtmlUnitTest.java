@@ -72,11 +72,14 @@ public class MoviesHtmlUnitTest {
     }
 
     private static File createWebApp() throws IOException {
-        return Archive.archive()
+        final File dir = Archive.archive()
                 .copyTo("WEB-INF/classes", basedir("target/classes"))
                 .copyTo("WEB-INF/lib", basedir("target/test-libs"))
                 .copyTo("", basedir("src/main/webapp"))
                 .asDir();
+
+        new File(dir, "WEB-INF/resources.xml").delete();
+        return dir;
     }
 
     @Test

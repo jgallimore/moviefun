@@ -19,6 +19,7 @@ package org.superbiz.moviefun;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.shrinkwrap.api.Filters;
@@ -27,14 +28,17 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.ClassLoaderAsset;
 import org.jboss.shrinkwrap.api.importer.ExplodedImporter;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import javax.ejb.EJB;
+import javax.ws.rs.core.Response;
+import java.io.File;
 import java.net.URL;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Arquillian.class)
@@ -44,19 +48,22 @@ public class MoviesArquillianHtmlUnitTest {
 
     @Deployment
     public static WebArchive createDeployment() {
+        final File[] files = Maven.resolver().loadPomFromFile("pom.xml")
+                .resolve("commons-lang:commons-lang:2.4").withTransitivity().asFile();
+
         WebArchive war = ShrinkWrap.create(WebArchive.class, "test.war")
-                .addClasses(Movie.class, MoviesBean.class, MoviesArquillianHtmlUnitTest.class, ActionServlet.class)
-                .addAsResource(new ClassLoaderAsset("META-INF/persistence.xml"), "META-INF/persistence.xml");
+                .addClasses(Movie.class, MoviesBean.class, MoviesArquillianHtmlUnitTest.class, ActionServlet.class, MoviefunApplication.class, Cleanup.class)
+                .addAsResource(new ClassLoaderAsset("META-INF/persistence.xml"), "META-INF/persistence.xml")
+                .addAsLibraries(files);
 
         war.merge(ShrinkWrap.create(GenericArchive.class).as(ExplodedImporter.class)
                         .importDirectory(Basedir.basedir(WEBAPP_SRC)).as(GenericArchive.class),
-                "/", Filters.includeAll());
+                "/", Filters.exclude(".*resources.xml"));
+
+        System.out.println(war.toString(true));
 
         return war;
     }
-
-    @EJB
-    private MoviesBean movies;
 
     @ArquillianResource
     private URL deploymentUrl;
@@ -64,10 +71,13 @@ public class MoviesArquillianHtmlUnitTest {
     @Before
     @After
     public void clean() {
-        movies.clean();
+        final String cleanupUrl = deploymentUrl + "/api/cleanup";
+        final Response response = org.apache.cxf.jaxrs.client.WebClient.create(cleanupUrl).get();
+        assertEquals(200, response.getStatus());
     }
 
     @Test
+    @RunAsClient
     public void testShouldMakeSureWebappIsWorking() throws Exception {
         WebClient webClient = new WebClient();
         HtmlPage page = webClient.getPage(deploymentUrl + "/setup.jsp");
