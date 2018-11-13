@@ -109,6 +109,9 @@
         <configuration>
           <tomeeClassifier>plus</tomeeClassifier>
           <args>-Xmx512m -XX:PermSize=256m</args>
+          <libs>
+            <lib>mysql:mysql-connector-java:8.0.13</lib>
+          </libs>
         </configuration>
       </plugin>
     </plugins>
@@ -144,6 +147,7 @@
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
       <version>8.0.13</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.tomee</groupId>

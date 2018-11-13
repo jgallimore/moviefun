@@ -58,7 +58,7 @@ public class MoviesArquillianHtmlUnitTest {
 
         war.merge(ShrinkWrap.create(GenericArchive.class).as(ExplodedImporter.class)
                         .importDirectory(Basedir.basedir(WEBAPP_SRC)).as(GenericArchive.class),
-                "/", Filters.exclude(".*resources.xml"));
+                "/", Filters.includeAll());
 
         System.out.println(war.toString(true));
 
